@@ -61,36 +61,20 @@
 </head>
 <body>
 
-    <div id="tv-selection">
-        <h2>Wähle deinen Samsung TV</h2>
-        <select id="tvList"></select>
-        <br><br>
-        <button class="btn" onclick="selectTV()">Verbinden</button>
-    </div>
+    <div id="remote-control" class="remote">
+        <h3>Samsung TV Fernbedienung</h3>
 
-    <div id="remote-control" class="remote" style="display: none;">
-        <!-- Power Button -->
         <div class="btn-row">
-            <button class="btn power" onclick="sendCommand('KEY_POWER')">🔴</button>
+            <button class="btn power" onclick="sendCommand('power')">🔴</button>
         </div>
 
-        <!-- Navigation -->
         <div class="btn-row">
-            <button class="btn" onclick="sendCommand('KEY_UP')">⬆</button>
-        </div>
-        <div class="btn-row">
-            <button class="btn" onclick="sendCommand('KEY_LEFT')">⬅</button>
-            <button class="btn home" onclick="sendCommand('KEY_ENTER')">🏠</button>
-            <button class="btn" onclick="sendCommand('KEY_RIGHT')">➡</button>
-        </div>
-        <div class="btn-row">
-            <button class="btn" onclick="sendCommand('KEY_DOWN')">⬇</button>
+            <button class="btn" onclick="sendCommand('volumeUp')">🔊+</button>
+            <button class="btn" onclick="sendCommand('volumeDown')">🔉-</button>
         </div>
 
-        <!-- Lautstärke -->
         <div class="btn-row">
-            <button class="btn volume" onclick="sendCommand('KEY_VOLUMEUP')">🔊 Lauter</button>
-            <button class="btn volume" onclick="sendCommand('KEY_VOLUMEDOWN')">🔉 Leiser</button>
+            <button class="btn" onclick="sendCommand('mute')">🔇</button>
         </div>
     </div>
 
@@ -103,53 +87,53 @@
     </footer>
 
     <script>
-        let selectedTV = "";
-        
-        function selectTV() {
-            const tvList = document.getElementById("tvList");
-            selectedTV = tvList.value;
-            document.getElementById("tv-selection").style.display = "none";
-            document.getElementById("remote-control").style.display = "block";
-        }
+        const smartThingsToken = "b76635f2-6216-42c7-91f8-04ae69ba0fd4"; // <--- HIER DEINEN TOKEN EINTRAGEN!
+        const deviceId = "8f4efc2a-5a01-3c4a-ec82-437202e0fd1f"; // <--- HIER DIE ID DEINES TVs EINTRAGEN!
 
         function sendCommand(command) {
-            if (!selectedTV) {
-                alert("Bitte zuerst einen Fernseher auswählen!");
-                return;
+            let capability, commandValue;
+
+            switch(command) {
+                case 'power':
+                    capability = "switch";
+                    commandValue = "off"; // Ändere zu "on" wenn du den TV einschalten willst
+                    break;
+                case 'volumeUp':
+                    capability = "audioVolume";
+                    commandValue = "volumeUp";
+                    break;
+                case 'volumeDown':
+                    capability = "audioVolume";
+                    commandValue = "volumeDown";
+                    break;
+                case 'mute':
+                    capability = "audioMute";
+                    commandValue = "mute";
+                    break;
+                default:
+                    console.error("Unbekannter Befehl: " + command);
+                    return;
             }
-            
-            fetch(`http://${selectedTV}:8001/api/v2/channels/samsung.remote.control`, {
+
+            fetch(`https://api.smartthings.com/v1/devices/${deviceId}/commands`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Authorization": `Bearer ${smartThingsToken}`,
+                    "Content-Type": "application/json"
+                },
                 body: JSON.stringify({
-                    method: "ms.remote.control",
-                    params: {
-                        Cmd: "Click",
-                        DataOfCmd: command,
-                        Option: "false",
-                        TypeOfRemote: "SendRemoteKey"
-                    }
+                    commands: [
+                        {
+                            capability: capability,
+                            command: commandValue
+                        }
+                    ]
                 })
             })
             .then(response => response.json())
             .then(data => console.log("Befehl gesendet:", data))
             .catch(error => console.error("Fehler:", error));
         }
-
-        // TVs im Netzwerk suchen (Hier kannst du statische IPs einfügen)
-        function loadTVs() {
-            const tvList = document.getElementById("tvList");
-            const tvs = ["192.168.1.35", "192.168.1.50"]; // Hier deine TV-IP-Adressen einfügen
-            
-            tvs.forEach(ip => {
-                let option = document.createElement("option");
-                option.value = ip;
-                option.textContent = `Samsung TV (${ip})`;
-                tvList.appendChild(option);
-            });
-        }
-
-        loadTVs();
     </script>
 
 </body>
