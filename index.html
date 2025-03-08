@@ -51,19 +51,6 @@
         .home { background: #007aff; }
         .settings { background: #ff9500; }
         .volume, .mute { background: #444; width: 120px; }
-        .touchpad {
-            width: 250px;
-            height: 150px;
-            background: #444;
-            border-radius: 10px;
-            margin: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 18px;
-            user-select: none;
-        }
     </style>
 </head>
 <body>
@@ -83,8 +70,7 @@
             <button class="btn volume" onclick="sendCommand('volumeDown')">🔉 Leiser</button>
         </div>
         <div class="btn-row">
-            <button class="btn mute" onclick="sendCommand('mute')">🔇 Mute</button>
-            <button class="btn mute" onclick="sendCommand('unmute')">🔊 Entmute</button>
+            <button class="btn mute" onclick="toggleMute()">🔇 Mute</button>
         </div>
 
         <!-- Navigation -->
@@ -108,7 +94,8 @@
     </div>
 
     <script>
-        let powerState = false; // Status für Power-Knopf
+        let powerState = false;
+        let muteState = false;
 
         function sendCommand(command) {
             if (!smartThingsConfig.token || !smartThingsConfig.deviceId) {
@@ -126,8 +113,12 @@
             switch (command) {
                 case 'volumeUp': capability = "audioVolume"; break;
                 case 'volumeDown': capability = "audioVolume"; break;
-                case 'mute': capability = "audioMute"; break;
-                case 'unmute': capability = "audioMute"; break;
+                case 'mute': 
+                    capability = "audioMute"; 
+                    commandValue = muteState ? "unmute" : "mute";
+                    muteState = !muteState;
+                    document.querySelector(".mute").innerText = muteState ? "🔊 Entmute" : "🔇 Mute";
+                    break;
                 case 'up': capability = "mediaPlayback"; break;
                 case 'down': capability = "mediaPlayback"; break;
                 case 'left': capability = "mediaPlayback"; break;
@@ -162,6 +153,10 @@
         function togglePower() {
             powerState = !powerState;
             sendCommand(powerState ? 'switchOn' : 'switchOff');
+        }
+
+        function toggleMute() {
+            sendCommand('mute');
         }
     </script>
 
