@@ -47,6 +47,7 @@
         .btn-row { display: flex; justify-content: center; }
         .power { background: red; width: 100px; }
         .home { background: #007aff; }
+        .settings { background: #ff9500; }
         .volume, .mute { background: #444; width: 120px; }
         .touchpad {
             width: 200px;
@@ -68,17 +69,21 @@
     <div id="remote-control" class="remote">
         <h3>Samsung TV Fernbedienung</h3>
 
-        <!-- Power Button -->
+        <!-- Power & Einstellungen -->
         <div class="btn-row">
             <button class="btn power" onclick="sendCommand('switch', 'on')">🔴 Ein</button>
             <button class="btn power" onclick="sendCommand('switch', 'off')">⚫ Aus</button>
+            <button class="btn settings" onclick="sendCommand('settings', 'open')">⚙ Einstellungen</button>
         </div>
 
         <!-- Volume & Mute -->
         <div class="btn-row">
             <button class="btn volume" onclick="sendCommand('audioVolume', 'volumeUp')">🔊+</button>
             <button class="btn volume" onclick="sendCommand('audioVolume', 'volumeDown')">🔉-</button>
-            <button class="btn mute" onclick="sendCommand('audioMute', 'mute')">🔇</button>
+        </div>
+        <div class="btn-row">
+            <button class="btn mute" onclick="sendCommand('audioMute', 'mute')">🔇 Mute</button>
+            <button class="btn mute" onclick="sendCommand('audioMute', 'unmute')">🔊 Entmute</button>
         </div>
 
         <!-- Touchpad für Navigation -->
@@ -89,7 +94,7 @@
                 </div>
                 <div class="btn-row">
                     <button class="btn" onclick="sendCommand('mediaPlayback', 'left')">⬅</button>
-                    <button class="btn home" onclick="sendCommand('mediaPlayback', 'enter')">🏠</button>
+                    <button class="btn home" onclick="sendCommand('mediaPlayback', 'home')">🏠 Home</button>
                     <button class="btn" onclick="sendCommand('mediaPlayback', 'right')">➡</button>
                 </div>
                 <div class="btn-row">
@@ -97,17 +102,32 @@
                 </div>
             </div>
         </div>
+
+        <!-- Steuerung -->
+        <div class="btn-row">
+            <button class="btn" onclick="sendCommand('mediaPlayback', 'back')">↩ Zurück</button>
+            <button class="btn" onclick="sendCommand('mediaPlayback', 'playPause')">⏯ Play/Pause</button>
+        </div>
     </div>
 
     <script>
-        const smartThingsToken = "dcecffea-2c2a-40d8-baee-dd6104990190"; // <--- HIER DEINEN TOKEN EINTRAGEN!
-        const deviceId = "8f4efc2a-5a01-3c4a-ec82-437202e0fd1f"; // <--- HIER DIE ID DEINES TVs EINTRAGEN!
+        const smartThingsToken = "DEIN_SMARTTHINGS_TOKEN"; // <--- HIER DEINEN TOKEN EINTRAGEN!
+        const deviceId = "DEINE_DEVICE_ID"; // <--- HIER DIE ID DEINES TVs EINTRAGEN!
 
         function sendCommand(capability, commandValue) {
-            // Vibrationsfeedback hinzufügen
+            // Vibration aktivieren
             if ("vibrate" in navigator) {
                 navigator.vibrate(50); // Vibriert für 50ms
             }
+
+            let smartThingsCommand = {
+                commands: [
+                    {
+                        capability: capability,
+                        command: commandValue
+                    }
+                ]
+            };
 
             fetch(`https://api.smartthings.com/v1/devices/${deviceId}/commands`, {
                 method: "POST",
@@ -115,14 +135,7 @@
                     "Authorization": `Bearer ${smartThingsToken}`,
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({
-                    commands: [
-                        {
-                            capability: capability,
-                            command: commandValue
-                        }
-                    ]
-                })
+                body: JSON.stringify(smartThingsCommand)
             })
             .then(response => response.json())
             .then(data => console.log("Befehl gesendet:", data))
