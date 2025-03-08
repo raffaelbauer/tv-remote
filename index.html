@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Samsung TV Fernbedienung</title>
+    <style>
+        /* Hintergrund */
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: #111;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        /* Fernbedienung */
+        .remote {
+            width: 300px;
+            background: #222;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Buttons */
+        .btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            background: #333;
+            color: white;
+            font-size: 20px;
+            border: none;
+            margin: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Button Animation */
+        .btn:active {
+            background: #555;
+            transform: scale(0.95);
+        }
+
+        /* Button-Reihen */
+        .btn-row { 
+            display: flex; 
+            justify-content: center; 
+        }
+
+        /* Spezialfarben */
+        .power { background: red; }
+        .home { background: #007aff; }
+        .volume, .channel { background: #444; width: 120px; }
+    </style>
+</head>
+<body>
+
+    <div class="remote">
+        <!-- Power Button -->
+        <div class="btn-row">
+            <button class="btn power" onclick="sendCommand('KEY_POWER')">🔴</button>
+        </div>
+
+        <!-- Navigation -->
+        <div class="btn-row">
+            <button class="btn" onclick="sendCommand('KEY_UP')">⬆</button>
+        </div>
+        <div class="btn-row">
+            <button class="btn" onclick="sendCommand('KEY_LEFT')">⬅</button>
+            <button class="btn home" onclick="sendCommand('KEY_ENTER')">🏠</button>
+            <button class="btn" onclick="sendCommand('KEY_RIGHT')">➡</button>
+        </div>
+        <div class="btn-row">
+            <button class="btn" onclick="sendCommand('KEY_DOWN')">⬇</button>
+        </div>
+
+        <!-- Lautstärke & Sender -->
+        <div class="btn-row">
+            <button class="btn volume" onclick="sendCommand('KEY_VOLUMEUP')">🔊 Lauter</button>
+            <button class="btn volume" onclick="sendCommand('KEY_VOLUMEDOWN')">🔉 Leiser</button>
+        </div>
+        <div class="btn-row">
+            <button class="btn channel" onclick="sendCommand('KEY_CHUP')">📺 Sender +</button>
+            <button class="btn channel" onclick="sendCommand('KEY_CHDOWN')">📺 Sender -</button>
+        </div>
+
+        <!-- Streaming Buttons -->
+        <div class="btn-row">
+            <button class="btn" onclick="sendCommand('KEY_NETFLIX')">🎬 Netflix</button>
+            <button class="btn" onclick="sendCommand('KEY_PRIME')">📺 Prime</button>
+            <button class="btn" onclick="sendCommand('KEY_YOUTUBE')">▶ YouTube</button>
+        </div>
+    </div>
+
+    <script>
+        const tvIP = "192.168.1.35"; // Deine TV-IP-Adresse
+        const tvPort = 8001; // Alternativ 8002 testen
+
+        function sendCommand(command) {
+            fetch(`http://${tvIP}:${tvPort}/api/v2/channels/samsung.remote.control`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    method: "ms.remote.control",
+                    params: {
+                        Cmd: "Click",
+                        DataOfCmd: command,
+                        Option: "false",
+                        TypeOfRemote: "SendRemoteKey"
+                    }
+                })
+            })
+            .then(response => response.json())
+            .then(data => console.log("Befehl gesendet:", data))
+            .catch(error => console.error("Fehler:", error));
+        }
+    </script>
+
+</body>
+</html>
