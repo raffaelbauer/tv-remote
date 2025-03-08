@@ -18,19 +18,19 @@
             margin: 0;
         }
         .remote {
-            width: 300px;
+            width: 320px;
             background: #222;
             padding: 20px;
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
         .btn {
-            width: 80px;
-            height: 80px;
-            border-radius: 20px;
+            width: 90px;
+            height: 50px;
+            border-radius: 10px;
             background: #333;
             color: white;
-            font-size: 20px;
+            font-size: 18px;
             border: none;
             margin: 10px;
             display: flex;
@@ -45,17 +45,21 @@
             transform: scale(0.95);
         }
         .btn-row { display: flex; justify-content: center; }
-        .power { background: red; }
+        .power { background: red; width: 100px; }
         .home { background: #007aff; }
-        .volume { background: #444; width: 120px; }
-        .footer {
-            margin-top: 20px;
-            font-size: 14px;
-            text-align: center;
-        }
-        .footer a {
+        .volume, .mute { background: #444; width: 120px; }
+        .touchpad {
+            width: 200px;
+            height: 150px;
+            background: #333;
+            border-radius: 10px;
+            margin: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: white;
-            text-decoration: none;
+            font-size: 18px;
+            user-select: none;
         }
     </style>
 </head>
@@ -64,55 +68,45 @@
     <div id="remote-control" class="remote">
         <h3>Samsung TV Fernbedienung</h3>
 
+        <!-- Power Button -->
         <div class="btn-row">
-            <button class="btn power" onclick="sendCommand('power')">🔴</button>
+            <button class="btn power" onclick="sendCommand('switch', 'on')">🔴 Ein</button>
+            <button class="btn power" onclick="sendCommand('switch', 'off')">⚫ Aus</button>
         </div>
 
+        <!-- Volume & Mute -->
         <div class="btn-row">
-            <button class="btn" onclick="sendCommand('volumeUp')">🔊+</button>
-            <button class="btn" onclick="sendCommand('volumeDown')">🔉-</button>
+            <button class="btn volume" onclick="sendCommand('audioVolume', 'volumeUp')">🔊+</button>
+            <button class="btn volume" onclick="sendCommand('audioVolume', 'volumeDown')">🔉-</button>
+            <button class="btn mute" onclick="sendCommand('audioMute', 'mute')">🔇</button>
         </div>
 
-        <div class="btn-row">
-            <button class="btn" onclick="sendCommand('mute')">🔇</button>
+        <!-- Touchpad für Navigation -->
+        <div class="touchpad">
+            <div>
+                <div class="btn-row">
+                    <button class="btn" onclick="sendCommand('mediaPlayback', 'up')">⬆</button>
+                </div>
+                <div class="btn-row">
+                    <button class="btn" onclick="sendCommand('mediaPlayback', 'left')">⬅</button>
+                    <button class="btn home" onclick="sendCommand('mediaPlayback', 'enter')">🏠</button>
+                    <button class="btn" onclick="sendCommand('mediaPlayback', 'right')">➡</button>
+                </div>
+                <div class="btn-row">
+                    <button class="btn" onclick="sendCommand('mediaPlayback', 'down')">⬇</button>
+                </div>
+            </div>
         </div>
     </div>
-
-    <footer class="footer">
-        <p>&copy; 2025 Raffael Bauer. Alle Rechte vorbehalten.</p>
-        <p>
-            <a href="https://raffaelbauer.github.io/Impressum/">Impressum</a> | 
-            <a href="https://raffaelbauer.github.io/Datenschutzerklaerung/">Datenschutzbestimmungen</a>
-        </p>
-    </footer>
 
     <script>
         const smartThingsToken = "dcecffea-2c2a-40d8-baee-dd6104990190"; // <--- HIER DEINEN TOKEN EINTRAGEN!
         const deviceId = "8f4efc2a-5a01-3c4a-ec82-437202e0fd1f"; // <--- HIER DIE ID DEINES TVs EINTRAGEN!
 
-        function sendCommand(command) {
-            let capability, commandValue;
-
-            switch(command) {
-                case 'power':
-                    capability = "switch";
-                    commandValue = "off"; // Ändere zu "on" wenn du den TV einschalten willst
-                    break;
-                case 'volumeUp':
-                    capability = "audioVolume";
-                    commandValue = "volumeUp";
-                    break;
-                case 'volumeDown':
-                    capability = "audioVolume";
-                    commandValue = "volumeDown";
-                    break;
-                case 'mute':
-                    capability = "audioMute";
-                    commandValue = "mute";
-                    break;
-                default:
-                    console.error("Unbekannter Befehl: " + command);
-                    return;
+        function sendCommand(capability, commandValue) {
+            // Vibrationsfeedback hinzufügen
+            if ("vibrate" in navigator) {
+                navigator.vibrate(50); // Vibriert für 50ms
             }
 
             fetch(`https://api.smartthings.com/v1/devices/${deviceId}/commands`, {
@@ -137,3 +131,4 @@
     </script>
 
 </body>
+</html>
