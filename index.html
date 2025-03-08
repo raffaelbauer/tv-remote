@@ -146,6 +146,12 @@
 
             logDebug(`📡 Sende Befehl: ${command}`);
 
+            let capability = "mediaPlayback"; // Standard für alle Befehle
+
+            if (command === "powerOn" || command === "powerOff") {
+                capability = "switch"; // Power benötigt eigene Fähigkeit
+            }
+
             try {
                 const response = await fetch(`https://api.smartthings.com/v1/devices/${smartThingsConfig.deviceId}/commands`, {
                     method: "POST",
@@ -156,7 +162,7 @@
                     body: JSON.stringify({
                         commands: [
                             {
-                                capability: "mediaPlayback",
+                                capability: capability,
                                 command: command
                             }
                         ]
@@ -173,7 +179,7 @@
 
         function togglePower() {
             powerState = !powerState;
-            sendCommand(powerState ? 'switchOn' : 'switchOff');
+            sendCommand(powerState ? 'powerOn' : 'powerOff');
         }
 
         function toggleMute() {
