@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Samsung TV Power Check</title>
+    <title>Samsung TV Fernbedienung</title>
     <script src="config.js"></script> <!-- Lädt die Konfigurationsdatei -->
     <style>
         body {
@@ -19,29 +19,34 @@
             margin: 0;
         }
         .remote {
-            width: 300px;
+            width: 350px;
             background: #222;
             padding: 20px;
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
         }
         .btn {
-            width: 150px;
-            height: 60px;
+            width: 100px;
+            height: 50px;
             border-radius: 10px;
-            background: red;
+            background: #333;
             color: white;
-            font-size: 18px;
+            font-size: 16px;
             border: none;
-            margin: 10px;
+            margin: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             cursor: pointer;
             transition: all 0.2s ease-in-out;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+            text-align: center;
         }
         .btn:active {
-            background: darkred;
+            background: #555;
             transform: scale(0.95);
         }
+        .btn-row { display: flex; justify-content: center; }
         .debug-output {
             background: #333;
             padding: 10px;
@@ -58,11 +63,42 @@
 <body>
 
     <div id="remote-control" class="remote">
-        <h2>Samsung TV Power Check</h2>
+        <h2>Samsung TV Fernbedienung</h2>
         <p><strong>TV-Status:</strong> <span id="tv-status">Lade...</span></p>
 
-        <!-- EIN/AUS -->
-        <button class="btn" onclick="togglePower()">🔴 Power</button>
+        <!-- Power & Einstellungen -->
+        <div class="btn-row">
+            <button class="btn" onclick="togglePower()">🔴 Power</button>
+            <button class="btn" onclick="sendCommand('menu')">⚙ Menü</button>
+        </div>
+
+        <!-- Volume & Mute -->
+        <div class="btn-row">
+            <button class="btn" onclick="sendCommand('volumeUp')">🔊 Lauter</button>
+            <button class="btn" onclick="sendCommand('volumeDown')">🔉 Leiser</button>
+        </div>
+        <div class="btn-row">
+            <button class="btn" onclick="toggleMute()">🔇 Mute</button>
+        </div>
+
+        <!-- Navigation -->
+        <div class="btn-row">
+            <button class="btn" onclick="sendCommand('up')">⬆</button>
+        </div>
+        <div class="btn-row">
+            <button class="btn" onclick="sendCommand('left')">⬅</button>
+            <button class="btn" onclick="sendCommand('home')">🏠 Home</button>
+            <button class="btn" onclick="sendCommand('right')">➡</button>
+        </div>
+        <div class="btn-row">
+            <button class="btn" onclick="sendCommand('down')">⬇</button>
+        </div>
+
+        <!-- Steuerung -->
+        <div class="btn-row">
+            <button class="btn" onclick="sendCommand('back')">↩ Zurück</button>
+            <button class="btn" onclick="sendCommand('playPause')">⏯ Play/Pause</button>
+        </div>
 
         <h3>Debug-Informationen</h3>
         <div class="debug-output" id="debug-log">Keine Daten</div>
@@ -85,16 +121,8 @@
                 const data = await response.json();
                 const powerState = data.components.main.switch.switch.value;
 
-                if (powerState === "on") {
-                    document.getElementById("tv-status").innerText = "✅ AN";
-                    logDebug("✅ TV ist AN");
-                } else if (powerState === "off") {
-                    document.getElementById("tv-status").innerText = "⚫ AUS";
-                    logDebug("⚫ TV ist AUS");
-                } else {
-                    document.getElementById("tv-status").innerText = "❓ Unbekannt";
-                    logDebug("❓ TV-Status konnte nicht ermittelt werden.");
-                }
+                document.getElementById("tv-status").innerText = powerState === "on" ? "✅ AN" : "⚫ AUS";
+                logDebug(`TV ist ${powerState.toUpperCase()}`);
 
                 return powerState;
             } catch (error) {
@@ -104,16 +132,13 @@
             }
         }
 
-        async function togglePower() {
-            const powerState = await getTvStatus();
-
-            if (powerState === null) {
-                logDebug("⚠ Konnte den aktuellen TV-Status nicht abrufen. Kein Befehl gesendet.");
+        async function sendCommand(command) {
+            if (!smartThingsConfig.token || !smartThingsConfig.deviceId) {
+                logDebug("❌ Fehler: SmartThings Token oder Device ID fehlen!");
                 return;
             }
 
-            const command = powerState === "on" ? "off" : "on";
-            logDebug(`📡 Sende Power-Befehl: ${command}`);
+            logDebug(`📡 Sende Befehl: ${command}`);
 
             try {
                 const response = await fetch(`https://api.smartthings.com/v1/devices/${smartThingsConfig.deviceId}/commands`, {
@@ -125,7 +150,7 @@
                     body: JSON.stringify({
                         commands: [
                             {
-                                capability: "switch",
+                                capability: "mediaPlayback",
                                 command: command
                             }
                         ]
@@ -134,11 +159,20 @@
 
                 const result = await response.json();
                 logDebug(`✅ Antwort: ${JSON.stringify(result, null, 2)}`);
-                await getTvStatus(); // Aktualisiert den Status nach dem Schalten
-
+                await getTvStatus();
             } catch (error) {
-                logDebug("❌ Fehler beim Senden des Power-Befehls: " + error);
+                logDebug("❌ Fehler beim Senden des Befehls: " + error);
             }
+        }
+
+        async function togglePower() {
+            const powerState = await getTvStatus();
+            if (powerState === null) return;
+            sendCommand(powerState === "on" ? "off" : "on");
+        }
+
+        async function toggleMute() {
+            sendCommand("mute");
         }
 
         function logDebug(message) {
