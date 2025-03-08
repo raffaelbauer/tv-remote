@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Samsung TV Fernbedienung</title>
+    <title>Samsung TV Debug-Fernbedienung</title>
     <script src="config.js"></script> <!-- Lädt die Konfigurationsdatei -->
     <style>
         body {
@@ -27,7 +27,7 @@
         }
         .btn {
             width: 100px;
-            height: 60px;
+            height: 50px;
             border-radius: 10px;
             background: #333;
             color: white;
@@ -47,117 +47,107 @@
             transform: scale(0.95);
         }
         .btn-row { display: flex; justify-content: center; }
-        .power { background: red; width: 120px; }
-        .home { background: #007aff; }
-        .settings { background: #ff9500; }
-        .volume, .mute { background: #444; width: 120px; }
+        .debug-output {
+            background: #333;
+            padding: 10px;
+            margin-top: 20px;
+            width: 80%;
+            border-radius: 10px;
+            text-align: left;
+            font-size: 14px;
+            overflow: auto;
+            max-height: 200px;
+        }
     </style>
 </head>
 <body>
 
     <div id="remote-control" class="remote">
-        <h2>Samsung TV Fernbedienung</h2>
+        <h2>Samsung TV Debug-Fernbedienung</h2>
 
-        <!-- EIN/AUS + Einstellungen -->
-        <div class="btn-row">
-            <button class="btn power" onclick="togglePower()">🔴 Power</button>
-            <button class="btn settings" onclick="sendCommand('settings')">⚙ Menü</button>
-        </div>
+        <!-- Debug-Status -->
+        <p><strong>TV-Status:</strong> <span id="tv-status">Lade...</span></p>
 
-        <!-- Volume & Mute -->
+        <!-- EIN/AUS -->
         <div class="btn-row">
-            <button class="btn volume" onclick="sendCommand('volumeUp')">🔊 Lauter</button>
-            <button class="btn volume" onclick="sendCommand('volumeDown')">🔉 Leiser</button>
-        </div>
-        <div class="btn-row">
-            <button class="btn mute" onclick="toggleMute()">🔇 Mute</button>
+            <button class="btn" onclick="sendCommand('switch', 'on')">🔴 EIN</button>
+            <button class="btn" onclick="sendCommand('switch', 'off')">⚫ AUS</button>
         </div>
 
-        <!-- Navigation -->
-        <div class="btn-row">
-            <button class="btn" onclick="sendCommand('up')">⬆</button>
-        </div>
-        <div class="btn-row">
-            <button class="btn" onclick="sendCommand('left')">⬅</button>
-            <button class="btn home" onclick="sendCommand('home')">🏠 Home</button>
-            <button class="btn" onclick="sendCommand('right')">➡</button>
-        </div>
-        <div class="btn-row">
-            <button class="btn" onclick="sendCommand('down')">⬇</button>
-        </div>
+        <!-- Debugging -->
+        <h3>Debug-Informationen</h3>
+        <div class="debug-output" id="debug-log">Keine Daten</div>
 
-        <!-- Steuerung -->
-        <div class="btn-row">
-            <button class="btn" onclick="sendCommand('back')">↩ Zurück</button>
-            <button class="btn" onclick="sendCommand('playPause')">⏯ Play/Pause</button>
-        </div>
     </div>
 
     <script>
-        let powerState = false;
-        let muteState = false;
-
-        function sendCommand(command) {
+        async function getTvStatus() {
             if (!smartThingsConfig.token || !smartThingsConfig.deviceId) {
-                console.error("SmartThings Token oder Device ID fehlt!");
+                logDebug("❌ Fehler: SmartThings Token oder Device ID fehlen!");
                 return;
             }
 
-            if ("vibrate" in navigator) {
-                navigator.vibrate(50);
+            try {
+                const response = await fetch(`https://api.smartthings.com/v1/devices/${smartThingsConfig.deviceId}`, {
+                    headers: {
+                        "Authorization": `Bearer ${smartThingsConfig.token}`
+                    }
+                });
+
+                const data = await response.json();
+                if (data.components) {
+                    document.getElementById("tv-status").innerText = "✅ Online";
+                    logDebug("✅ TV-Status: Online");
+                } else {
+                    document.getElementById("tv-status").innerText = "⚠ Offline";
+                    logDebug("⚠ TV-Status: Offline oder keine Antwort erhalten.");
+                }
+            } catch (error) {
+                document.getElementById("tv-status").innerText = "❌ Fehler";
+                logDebug("❌ Fehler beim Abrufen des TV-Status: " + error);
+            }
+        }
+
+        async function sendCommand(capability, commandValue) {
+            if (!smartThingsConfig.token || !smartThingsConfig.deviceId) {
+                logDebug("❌ Fehler: SmartThings Token oder Device ID fehlen!");
+                return;
             }
 
-            let capability = "";
-            let commandValue = command;
+            logDebug(`📡 Sende Befehl: ${commandValue}`);
 
-            switch (command) {
-                case 'volumeUp': capability = "audioVolume"; break;
-                case 'volumeDown': capability = "audioVolume"; break;
-                case 'mute': 
-                    capability = "audioMute"; 
-                    commandValue = muteState ? "unmute" : "mute";
-                    muteState = !muteState;
-                    document.querySelector(".mute").innerText = muteState ? "🔊 Entmute" : "🔇 Mute";
-                    break;
-                case 'up': capability = "mediaPlayback"; break;
-                case 'down': capability = "mediaPlayback"; break;
-                case 'left': capability = "mediaPlayback"; break;
-                case 'right': capability = "mediaPlayback"; break;
-                case 'home': capability = "mediaPlayback"; break;
-                case 'back': capability = "mediaPlayback"; break;
-                case 'playPause': capability = "mediaPlayback"; break;
-                case 'settings': capability = "mediaPlayback"; commandValue = "menu"; break;
-                default: console.error("Unbekannter Befehl:", command); return;
+            try {
+                const response = await fetch(`https://api.smartthings.com/v1/devices/${smartThingsConfig.deviceId}/commands`, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${smartThingsConfig.token}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        commands: [
+                            {
+                                capability: capability,
+                                command: commandValue
+                            }
+                        ]
+                    })
+                });
+
+                const result = await response.json();
+                logDebug(`✅ Antwort: ${JSON.stringify(result, null, 2)}`);
+
+            } catch (error) {
+                logDebug("❌ Fehler beim Senden des Befehls: " + error);
             }
-
-            fetch(`https://api.smartthings.com/v1/devices/${smartThingsConfig.deviceId}/commands`, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${smartThingsConfig.token}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    commands: [
-                        {
-                            capability: capability,
-                            command: commandValue
-                        }
-                    ]
-                })
-            })
-            .then(response => response.json())
-            .then(data => console.log("Befehl gesendet:", data))
-            .catch(error => console.error("Fehler:", error));
         }
 
-        function togglePower() {
-            powerState = !powerState;
-            sendCommand(powerState ? 'switchOn' : 'switchOff');
+        function logDebug(message) {
+            const log = document.getElementById("debug-log");
+            log.innerHTML = `${new Date().toLocaleTimeString()}: ${message}<br>` + log.innerHTML;
         }
 
-        function toggleMute() {
-            sendCommand('mute');
-        }
+        // Starte Debugging beim Laden der Seite
+        getTvStatus();
     </script>
 
 </body>
