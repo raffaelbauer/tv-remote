@@ -68,19 +68,49 @@
         <!-- Debug-Status -->
         <p><strong>TV-Status:</strong> <span id="tv-status">Lade...</span></p>
 
-        <!-- EIN/AUS -->
+        <!-- Power & Einstellungen -->
         <div class="btn-row">
-            <button class="btn" onclick="sendCommand('switch', 'on')">🔴 EIN</button>
-            <button class="btn" onclick="sendCommand('switch', 'off')">⚫ AUS</button>
+            <button class="btn" onclick="togglePower()">🔴 Power</button>
+            <button class="btn" onclick="sendCommand('menu')">⚙ Menü</button>
         </div>
 
-        <!-- Debugging -->
+        <!-- Volume & Mute -->
+        <div class="btn-row">
+            <button class="btn" onclick="sendCommand('volumeUp')">🔊 Lauter</button>
+            <button class="btn" onclick="sendCommand('volumeDown')">🔉 Leiser</button>
+        </div>
+        <div class="btn-row">
+            <button class="btn" onclick="toggleMute()">🔇 Mute</button>
+        </div>
+
+        <!-- Navigation -->
+        <div class="btn-row">
+            <button class="btn" onclick="sendCommand('up')">⬆</button>
+        </div>
+        <div class="btn-row">
+            <button class="btn" onclick="sendCommand('left')">⬅</button>
+            <button class="btn" onclick="sendCommand('home')">🏠 Home</button>
+            <button class="btn" onclick="sendCommand('right')">➡</button>
+        </div>
+        <div class="btn-row">
+            <button class="btn" onclick="sendCommand('down')">⬇</button>
+        </div>
+
+        <!-- Steuerung -->
+        <div class="btn-row">
+            <button class="btn" onclick="sendCommand('back')">↩ Zurück</button>
+            <button class="btn" onclick="sendCommand('playPause')">⏯ Play/Pause</button>
+        </div>
+
         <h3>Debug-Informationen</h3>
         <div class="debug-output" id="debug-log">Keine Daten</div>
 
     </div>
 
     <script>
+        let powerState = false;
+        let muteState = false;
+
         async function getTvStatus() {
             if (!smartThingsConfig.token || !smartThingsConfig.deviceId) {
                 logDebug("❌ Fehler: SmartThings Token oder Device ID fehlen!");
@@ -108,13 +138,13 @@
             }
         }
 
-        async function sendCommand(capability, commandValue) {
+        async function sendCommand(command) {
             if (!smartThingsConfig.token || !smartThingsConfig.deviceId) {
                 logDebug("❌ Fehler: SmartThings Token oder Device ID fehlen!");
                 return;
             }
 
-            logDebug(`📡 Sende Befehl: ${commandValue}`);
+            logDebug(`📡 Sende Befehl: ${command}`);
 
             try {
                 const response = await fetch(`https://api.smartthings.com/v1/devices/${smartThingsConfig.deviceId}/commands`, {
@@ -126,8 +156,8 @@
                     body: JSON.stringify({
                         commands: [
                             {
-                                capability: capability,
-                                command: commandValue
+                                capability: "mediaPlayback",
+                                command: command
                             }
                         ]
                     })
@@ -141,12 +171,21 @@
             }
         }
 
+        function togglePower() {
+            powerState = !powerState;
+            sendCommand(powerState ? 'switchOn' : 'switchOff');
+        }
+
+        function toggleMute() {
+            muteState = !muteState;
+            sendCommand(muteState ? 'mute' : 'unmute');
+        }
+
         function logDebug(message) {
             const log = document.getElementById("debug-log");
             log.innerHTML = `${new Date().toLocaleTimeString()}: ${message}<br>` + log.innerHTML;
         }
 
-        // Starte Debugging beim Laden der Seite
         getTvStatus();
     </script>
 
