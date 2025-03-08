@@ -78,7 +78,7 @@
             <button class="btn" onclick="sendCommand('volumeDown')">🔉 Leiser</button>
         </div>
         <div class="btn-row">
-            <button class="btn" onclick="toggleMute()">🔇 Mute</button>
+            <button class="btn" onclick="sendCommand('mute')">🔇 Mute</button>
         </div>
 
         <!-- Navigation -->
@@ -159,7 +159,6 @@
 
                 const result = await response.json();
                 logDebug(`✅ Antwort: ${JSON.stringify(result, null, 2)}`);
-                await getTvStatus();
             } catch (error) {
                 logDebug("❌ Fehler beim Senden des Befehls: " + error);
             }
@@ -168,11 +167,14 @@
         async function togglePower() {
             const powerState = await getTvStatus();
             if (powerState === null) return;
-            sendCommand(powerState === "on" ? "off" : "on");
-        }
+            const command = powerState === "on" ? "off" : "on";
 
-        async function toggleMute() {
-            sendCommand("mute");
+            try {
+                await sendCommand(command);
+                await getTvStatus(); // Aktualisiert den Status nach dem Schalten
+            } catch (error) {
+                logDebug("❌ Fehler beim Senden des Power-Befehls: " + error);
+            }
         }
 
         function logDebug(message) {
