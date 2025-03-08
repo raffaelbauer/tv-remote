@@ -5,20 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Samsung TV Fernbedienung</title>
     <style>
-        /* Hintergrund */
         body {
             font-family: Arial, sans-serif;
             text-align: center;
             background: #111;
             color: white;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
         }
-
-        /* Fernbedienung */
         .remote {
             width: 300px;
             background: #222;
@@ -26,8 +24,6 @@
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
-
-        /* Buttons */
         .btn {
             width: 80px;
             height: 80px;
@@ -44,28 +40,35 @@
             transition: all 0.2s ease-in-out;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
         }
-
-        /* Button Animation */
         .btn:active {
             background: #555;
             transform: scale(0.95);
         }
-
-        /* Button-Reihen */
-        .btn-row { 
-            display: flex; 
-            justify-content: center; 
-        }
-
-        /* Spezialfarben */
+        .btn-row { display: flex; justify-content: center; }
         .power { background: red; }
         .home { background: #007aff; }
-        .volume, .channel { background: #444; width: 120px; }
+        .volume { background: #444; width: 120px; }
+        .footer {
+            margin-top: 20px;
+            font-size: 14px;
+            text-align: center;
+        }
+        .footer a {
+            color: white;
+            text-decoration: none;
+        }
     </style>
 </head>
 <body>
 
-    <div class="remote">
+    <div id="tv-selection">
+        <h2>Wähle deinen Samsung TV</h2>
+        <select id="tvList"></select>
+        <br><br>
+        <button class="btn" onclick="selectTV()">Verbinden</button>
+    </div>
+
+    <div id="remote-control" class="remote" style="display: none;">
         <!-- Power Button -->
         <div class="btn-row">
             <button class="btn power" onclick="sendCommand('KEY_POWER')">🔴</button>
@@ -84,30 +87,38 @@
             <button class="btn" onclick="sendCommand('KEY_DOWN')">⬇</button>
         </div>
 
-        <!-- Lautstärke & Sender -->
+        <!-- Lautstärke -->
         <div class="btn-row">
             <button class="btn volume" onclick="sendCommand('KEY_VOLUMEUP')">🔊 Lauter</button>
             <button class="btn volume" onclick="sendCommand('KEY_VOLUMEDOWN')">🔉 Leiser</button>
         </div>
-        <div class="btn-row">
-            <button class="btn channel" onclick="sendCommand('KEY_CHUP')">📺 Sender +</button>
-            <button class="btn channel" onclick="sendCommand('KEY_CHDOWN')">📺 Sender -</button>
-        </div>
-
-        <!-- Streaming Buttons -->
-        <div class="btn-row">
-            <button class="btn" onclick="sendCommand('KEY_NETFLIX')">🎬 Netflix</button>
-            <button class="btn" onclick="sendCommand('KEY_PRIME')">📺 Prime</button>
-            <button class="btn" onclick="sendCommand('KEY_YOUTUBE')">▶ YouTube</button>
-        </div>
     </div>
 
+    <footer class="footer">
+        <p>&copy; 2025 Raffael Bauer. Alle Rechte vorbehalten.</p>
+        <p>
+            <a href="https://raffaelbauer.github.io/Impressum/">Impressum</a> | 
+            <a href="https://raffaelbauer.github.io/Datenschutzerklaerung/">Datenschutzbestimmungen</a>
+        </p>
+    </footer>
+
     <script>
-        const tvIP = "192.168.1.35"; // Deine TV-IP-Adresse
-        const tvPort = 8001; // Alternativ 8002 testen
+        let selectedTV = "";
+        
+        function selectTV() {
+            const tvList = document.getElementById("tvList");
+            selectedTV = tvList.value;
+            document.getElementById("tv-selection").style.display = "none";
+            document.getElementById("remote-control").style.display = "block";
+        }
 
         function sendCommand(command) {
-            fetch(`http://${tvIP}:${tvPort}/api/v2/channels/samsung.remote.control`, {
+            if (!selectedTV) {
+                alert("Bitte zuerst einen Fernseher auswählen!");
+                return;
+            }
+            
+            fetch(`http://${selectedTV}:8001/api/v2/channels/samsung.remote.control`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -124,6 +135,21 @@
             .then(data => console.log("Befehl gesendet:", data))
             .catch(error => console.error("Fehler:", error));
         }
+
+        // TVs im Netzwerk suchen (Hier kannst du statische IPs einfügen)
+        function loadTVs() {
+            const tvList = document.getElementById("tvList");
+            const tvs = ["192.168.1.35", "192.168.1.50"]; // Hier deine TV-IP-Adressen einfügen
+            
+            tvs.forEach(ip => {
+                let option = document.createElement("option");
+                option.value = ip;
+                option.textContent = `Samsung TV (${ip})`;
+                tvList.appendChild(option);
+            });
+        }
+
+        loadTVs();
     </script>
 
 </body>
